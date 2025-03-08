@@ -12,6 +12,8 @@ load_dotenv()
 # Load an OpenAI API key
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")  # Set this in your environment variables
 
+client = OpenAI(api_key=OPENAI_API_KEY)
+
 """class Filters(BaseModel):
     location: str
     budget: float
@@ -41,13 +43,22 @@ async def query_chatgpt(prompt: str) -> str:
     
     return response_json["choices"][0]["message"]["content"]
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+
 
 @app.get("/search")
 async def search(q: str): # If using query class, add after str = FastAPI.Query(..., min_length=1, title="Search Query")
     """Handles a search request and queries ChatGPT."""
+
+    completion = client.chat.completions.create(
+    model="gpt-3.5-turbo",
+    store=True,
+    messages=[
+        {"role": "user", "content": q}
+    ]
+    )
+    
+    return completion.choices[0].message
+
     chatgpt_response = await query_chatgpt(f"Search for: {q}")
     
     return {
