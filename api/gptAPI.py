@@ -54,16 +54,3 @@ async def search(q: str): # If using query class, add after str = FastAPI.Query(
         "query": q,
         "results": [chatgpt_response]  # Returning as a list for consistency
     }
-
-
-client = OpenAI(
-  api_key="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"
-)
-
-completion = client.chat.completions.create(
-  model="gpt-4o-mini",
-  store=True,
-  messages=[
-    {"role": "user", "content": "write a haiku about ai"}
-  ]
-)
