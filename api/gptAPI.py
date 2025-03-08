@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import httpx  # Async HTTP requests
 import os
 
-app = FastAPI()
+
 
 # Load environment varialbes from .env file
 load_dotenv()
