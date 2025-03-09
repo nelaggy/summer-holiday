@@ -730,7 +730,7 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
     )
 
     response_content = response.choices[0].message.content
-
+    print(response_content)
     # Extract City Name
     match = re.search(r'City Name:\s*(.+)', response_content)
     location = match.group(1).strip() if match else ""
@@ -771,6 +771,7 @@ def GPT_filter_suggestion(results, unused_filters):
     )
 
     response_content = response.choices[0].message.content
+    print(response_content)
     return response_content.split(",")
 
 @router.get("/search")
