@@ -54,7 +54,7 @@ def search_booking(filters: dict) -> dict:
     query_params = {
         'page_number': 0,
         'order_by': 'popularity',
-        'categories_filter_ids': build_category_filters(filters['categories']),
+        'categories_filter_ids': build_category_filters(filters['categories']) if filters['categories'] else None,
         'adults_number': filters['adults_number'],
         'units': 'metric',
         'dest_id': dest_id,  # example destination ID
@@ -140,7 +140,8 @@ filters = {
     'children_number': 1,
     'checkin_date': '2025-06-16',
     'checkout_date': '2025-06-19',
-    'categories': ["facility::16","facility::2","facility::17"]
+    'categories': []
+    # 'categories': ["facility::16","facility::2","facility::17"]
 }
 
 #print(search_booking(filters))
