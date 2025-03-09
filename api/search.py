@@ -2,7 +2,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from openai import OpenAI
 from dotenv import load_dotenv
-import booking_com_api.booking_com_api as bca
+from booking_com_api.booking_com_api import search_booking
 import os
 import re
 
@@ -23,7 +23,7 @@ class Filters(BaseModel):
     num_people: int | None
     start_date: str | None
     end_date: str | None
-    dynamic_filters: dict[str,] | None
+    dynamic_filters: dict[str, str] | None
 
 # Indices -> various filters in booking.com (redundant)
 indices_filters = {
@@ -697,7 +697,6 @@ filters_indices = {
 'Provide guests with information regarding local ecosystems, heritage and culture, as well as visitor etiquette': '510',
 'Indoor fireplace': '511',
 'Breakfast to go': '514',
-'': 'other'
 }
 filters_values = list(filters_indices.keys())
 unused_filters = filters_values.copy()
@@ -738,15 +737,18 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
     # Extract and collate which filters (corresponding keys) are requested
     bool_dict = {True: [], False: []}
     for filter in filters_values:
-        match = re.search(rf"\[{re.escape(filter)}\]:\s*(True|False)", response_content)
+        match = re.search(rf"{re.escape(filter)}:\s*(True|False)", response_content)
         if match:
             bool_dict[match.group(1).strip() == "True"].append(filter)
+    print(bool_dict)
     category_filter_string = []
-    for filter in bool_dict[True]:
-        category_filter_string.append(f"facility::{filters_indices[filter]}" for filter in bool_dict[True])
-        unused_filters.remove(filter)
-    for filter in bool_dict[False]:
-        unused_filters.remove(filter)
+    if filter in filters_values:
+        for filter in bool_dict[True]:
+            category_filter_string.append(f"facility::{filters_indices[filter]}")
+            unused_filters.remove(filter)
+        for filter in bool_dict[False]:
+            unused_filters.remove(filter)
+    print(category_filter_string)
     return location, category_filter_string
 
 def GPT_filter_suggestion(results, unused_filters):
@@ -785,7 +787,8 @@ async def search(item: Filters, full_results: bool = False) -> list[dict] | tupl
     bcomIn["adults_number"] = item["adults_number"]
     bcomIn["children_number"] = item["children_number"]
     
-    results = list(bca.search_booking(bcomIn).values())
+    print(bcomIn)
+    results = list(search_booking(bcomIn).values())
     num_results = len(results)
     suggested_filters = GPT_filter_suggestion(results, unused_filters)
     if full_results:
