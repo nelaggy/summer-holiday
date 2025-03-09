@@ -757,11 +757,11 @@ def GPT_filter_suggestion(results, unused_filters):
     Available Filters:
     {unused_filters}
 
-    Given the results above, please suggest 5 available filters that would help refine the search in the following format:
+    Based on the results and available filters above, suggest 5 filters that would best refine the search. Provide the filter names in the following format:
 
     "[Filter Name],"
 
-    Ensure the response contains only the required information and no additional text.
+    Do not include any extra text or explanation.
     """
     messages = [{"role": "user", "content": prompt_message}]
     response = client.chat.completions.create(
@@ -772,9 +772,6 @@ def GPT_filter_suggestion(results, unused_filters):
 
     response_content = response.choices[0].message.content
     return response_content.split(",")
-
-
-
 
 @router.get("/search")
 async def search(item: Filters, full_results: bool = False) -> list[dict] | tuple[int, list[str]]:
