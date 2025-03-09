@@ -787,6 +787,7 @@ async def search(item: Filters, full_results: bool = False) -> list[dict] | tupl
     bcomIn["checkout_date"] = item["checkout_date"]
     bcomIn["adults_number"] = item["adults_number"]
     bcomIn["children_number"] = item["children_number"]
+    bcomIn["budget"] = item["budget"] * (item["adults_number"] + item["children_number"])
     
     print(bcomIn)
     results = list(search_booking(bcomIn).values())
