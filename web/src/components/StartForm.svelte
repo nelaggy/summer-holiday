@@ -1,8 +1,8 @@
 <script lang="ts">
 	const {
-		newTrip
+		updateParams
 	}: {
-		newTrip: (params: {
+		updateParams: (params: {
 			destination: string;
 			startDate: string;
 			endDate: string;
@@ -21,6 +21,16 @@
 	let numChildren: number = $state(0);
 	let budget: number = $state(0);
 	let notes: string = $state('');
+
+    let params = $derived({
+            destination,
+            startDate,
+            endDate,
+            numAdults,
+            numChildren,
+            budget,
+            notes
+    });
 
 	const nextStage = () => {
 		if (stage <= 4) {
@@ -145,7 +155,7 @@
 				id="adults"
 				type="number"
 				min={0}
-				defaultValue={0}
+				defaultValue={2}
 				autocomplete="off"
 				required
 				class="border border-stone-500 p-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-500 w-full col-span-1 text-center"
@@ -235,7 +245,7 @@
 			onsubmit={(e) => {
 				e.preventDefault();
 				nextStage();
-				newTrip({ destination, startDate, endDate, numAdults, numChildren, budget, notes });
+                updateParams(params);
 			}}
 		>
 			<p class="my-auto text-xl align-middle pr-2 col-span-1">Notes?</p>

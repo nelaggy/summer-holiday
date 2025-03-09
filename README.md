@@ -46,3 +46,9 @@ to run dev server:
 ```bash
 npm run dev
 ```
+
+### /web
+sveltekit frontend
+
+### /api
+python backend, calls gpt 4o mini
