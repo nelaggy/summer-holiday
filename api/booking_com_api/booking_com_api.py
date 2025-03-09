@@ -65,7 +65,8 @@ def search_booking(filters: dict) -> dict:
         'locale': 'en-gb',
         'children_number': filters['children_number'],
         'dest_type': 'city' if int(dest_id) < 0 else 'country',
-        'checkout_date': filters['checkout_date']
+        'checkout_date': filters['checkout_date'],
+        'price_filter_max': filters.get('budget', 1000)  # Default to 1000 if not provided
         }
 
     
@@ -78,7 +79,6 @@ def search_booking(filters: dict) -> dict:
     search_res = conn.getresponse()
     search_data = search_res.read()
     parsed_json_search_data = json.loads(search_data.decode("utf-8"))
-    print(parsed_json_search_data)
     # get dictionary of the first page of results with only necessary info
     result = dict()
     for i in range(len(parsed_json_search_data['result'])):
@@ -140,8 +140,9 @@ filters = {
     'children_number': 1,
     'checkin_date': '2025-06-16',
     'checkout_date': '2025-06-19',
-    'categories': []
+    'categories': [],
+    'budget': 150
     # 'categories': ["facility::16","facility::2","facility::17"]
 }
 
-#print(search_booking(filters))
+# print(search_booking(filters))
