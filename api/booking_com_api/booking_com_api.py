@@ -55,7 +55,7 @@ def search_booking(filters: dict) -> dict:
         'page_number': 0,
         'order_by': 'popularity',
         'categories_filter_ids': build_category_filters(filters['categories']) if filters['categories'] else None,
-        'adults_number': filters['adults_number'],
+        'adults_number': filters['adults_number'] if filters['adults_number'] > 0 else None,
         'units': 'metric',
         'dest_id': dest_id,  # example destination ID
         'room_number': 1,
@@ -63,11 +63,18 @@ def search_booking(filters: dict) -> dict:
         'include_adjacency': 'true',
         'filter_by_currency': 'GBP',
         'locale': 'en-gb',
-        'children_number': filters['children_number'],
+        'children_number': filters['children_number'] if filters['children_number'] > 0 else None,
         'dest_type': 'city' if int(dest_id) < 0 else 'country',
         'checkout_date': filters['checkout_date'],
         'price_filter_max': filters.get('budget', 1000)  # Default to 1000 if not provided
-        }
+    }
+    if query_params['children_number'] is None:
+        del query_params['children_number']
+    if query_params['adults_number'] is None:
+        del query_params['adults_number']
+    if query_params['categories_filter_ids'] is None:
+        del query_params['categories_filter_ids']
+
 
     
     # Encode parameters for the request

@@ -736,16 +736,15 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
         if match:
             bool_dict[match.group(1).strip() == "True"].append(filter)
     category_filter_string = []
-    if filter in filters_values:
-        for filter in bool_dict[True]:
-            category_filter_string.append(f"facility::{filters_indices[filter]}")
-            unused_filters.remove(filter)
-        for filter in bool_dict[False]:
-            unused_filters.remove(filter)
+    # if filter in filters_values:
+    #     for filter in bool_dict[True]:
+    #         category_filter_string.append(f"facility::{filters_indices[filter]}")
+    #         unused_filters.remove(filter)
+    #     for filter in bool_dict[False]:
+    #         unused_filters.remove(filter)
     return location, category_filter_string
 
 def GPT_filter_suggestion(results, unused_filters):
-    print(len(str(results)))
     
     prompt_message = f"""
     Results:
@@ -753,7 +752,7 @@ def GPT_filter_suggestion(results, unused_filters):
     Available Filters:
     {unused_filters}
     Based on the results and available filters above, suggest 5 filters that would best refine the search. Provide the filter names in the following format:
-    "[Filter Name] "
+    "[Filter Name]<end>"
     Do not include any extra text or explanation.
     """
     messages = [{"role": "user", "content": prompt_message}]
@@ -764,8 +763,7 @@ def GPT_filter_suggestion(results, unused_filters):
     )
 
     response_content = response.choices[0].message.content
-    print(response_content)
-    return response_content.split(" ")
+    return [x.strip("\"").strip("\n").strip("\"") for x in response_content.split("<end>")[:-1]]
 
 def nights_counter(checkin_date: str, checkout_date: str) -> int:
     """Inputs are of form yyyy-mm-dd"""
@@ -775,17 +773,46 @@ def nights_counter(checkin_date: str, checkout_date: str) -> int:
     delta = checkout - checkin
     return delta.days
 
-@router.get("/search")
-async def search(item: Filters, full_results: bool = False) -> list[dict] | tuple[int, list[str]]:
+def GPT_reorder(results, dyn_filters):
+    prompt_message = f"""
+    Results:
+    {results}
+    User Preferences:
+    {dyn_filters}
+    Based on the individual reviews in the results and user preferences above, reorder the results' entries and output the new keys:
+    
+    "[Old Key]:[New Key]"
+
+    Do not include any extra text or explanation.
+    """
+    messages = [{"role": "user", "content": prompt_message}]
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=messages,
+        max_tokens=500)
+
+    response_content = response.choices[0].message.content
+
+    keyPairs = [(int(x.split(":")[0].strip()), int(x.split(":")[1].strip())) for x in response_content.split("\n") if ":" in x]
+
+
+    new_results = {}
+    for pair in keyPairs:
+        new_results[pair[1]] = results[pair[0]]
+
+    return new_results
+
+@router.post("/search")
+async def search(item: Filters, full_results: bool = False) -> dict :
     loc, category_filter_string = GPT_enquiry(item)
     bcomIn = {}
     bcomIn["destination"] = loc
     bcomIn["categories"] = category_filter_string
-    bcomIn["checkin_date"] = item["checkin_date"]
-    bcomIn["checkout_date"] = item["checkout_date"]
-    bcomIn["adults_number"] = item["adults_number"]
-    bcomIn["children_number"] = item["children_number"]
-    bcomIn["budget"] = item["budget"] * (item["adults_number"] + item["children_number"])/nights_counter(item["checkin_date"], item["checkout_date"])
+    bcomIn["checkin_date"] = item.checkin_date
+    bcomIn["checkout_date"] = item.checkout_date
+    bcomIn["adults_number"] = item.adults_number
+    bcomIn["children_number"] = item.children_number
+    bcomIn["budget"] = item.budget * (item.adults_number + item.children_number)/nights_counter(item.checkin_date, item.checkout_date)
     results = list(search_booking(bcomIn).values())
     num_results = len(results)
     suggested_filters = GPT_filter_suggestion(results, unused_filters)
