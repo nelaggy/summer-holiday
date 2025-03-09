@@ -3,9 +3,13 @@ from pydantic import BaseModel
 import http.client
 from urllib.parse import urlencode
 import os
+from dotenv import load_dotenv
 import json
 
-API_KEY = "7e61bd4762msh662536c53d5845ep10b48bjsn6d7fdecfa09f"
+# Load environment varialbes from .env file
+load_dotenv()
+
+API_KEY = os.getenv("booking_com_API_KEY")
 API_HOST = "booking-com.p.rapidapi.com"
 
 
