@@ -21,24 +21,6 @@ selected_categories = ["free_cancellation::1", "parking::1"]
 category_filter_string = build_category_filters(selected_categories)
 
 
-# GPT gives me this!!!
-query_params = {
-        'page_number': 0,
-        'order_by': 'popularity',
-        'categories_filter_ids': category_filter_string,
-        'adults_number': 2,
-        'units': 'metric',
-        'dest_id': '-553173',  # example destination ID
-        'room_number': 1,
-        'checkin_date': '2025-06-16',
-        'include_adjacency': 'true',
-        'filter_by_currency': 'GBP',
-        'locale': 'en-gb',
-        'children_number': 2,
-        'dest_type': 'city',
-        'checkout_date': '2025-06-17'
-        }
-
 # For GPT Ends Here!!!
 
 
@@ -58,12 +40,12 @@ def get_destination_id(location_name: str):
 
 def search_booking(filters: dict) -> dict:
     """Call Booking.com API using extracted filters."""
-    conn = http.client.HTTPSConnection(API_HOST)
-
     headers = {
         "x-rapidapi-key": API_KEY,
         "x-rapidapi-host": API_HOST
     }
+
+    conn = http.client.HTTPSConnection(API_HOST)
 
     dest_id = get_destination_id(filters['destination'])
 
@@ -94,8 +76,32 @@ def search_booking(filters: dict) -> dict:
     res = conn.getresponse()
     data = res.read()
 
-    return data.decode("utf-8")
+    decoded_data = data.decode("utf-8")
+    parsed_json = json.loads(decoded_data)
+    result = dict()
 
+    # get dictionary of the first page of results with only necessary info
+    for i in range(len(parsed_json['result'])):
+        result[i] = {
+            'hotel_name': parsed_json['result'][i]['hotel_name'],
+            'url': parsed_json['result'][i]['url'],
+            'gross_amount': parsed_json['result'][i]['composite_price_breakdown']['gross_amount'],
+            'accommodation_type_name': parsed_json['result'][i]['accommodation_type_name'],
+            'unit_configuration_label': parsed_json['result'][i]['unit_configuration_label'],
+            'address': parsed_json['result'][i]['address'],
+            'distances': parsed_json['result'][i]['distances'],
+            'is_city_center': parsed_json['result'][i]['is_city_center'],
+            'hotel_facilities': parsed_json['result'][i]['hotel_facilities'],
+            'soldout': parsed_json['result'][i]['soldout'],
+            'children_not_allowed': parsed_json['result'][i]['children_not_allowed']          
+        }
+
+    # add reviews to result dictionary
+
+    
+    return result
+
+# example input and result
 filters = {
     'adults_number': 5,
     'destination': "Paris",
@@ -105,5 +111,4 @@ filters = {
     'categories': ["facility::16","facility::2","facility::17"]
 }
 
-result = search_booking(filters)
-print(result)
+search_booking(filters)
