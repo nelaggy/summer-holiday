@@ -78,7 +78,7 @@ def search_booking(filters: dict) -> dict:
     search_res = conn.getresponse()
     search_data = search_res.read()
     parsed_json_search_data = json.loads(search_data.decode("utf-8"))
-
+    print(parsed_json_search_data)
     # get dictionary of the first page of results with only necessary info
     result = dict()
     for i in range(len(parsed_json_search_data['result'])):
@@ -144,4 +144,4 @@ filters = {
     # 'categories': ["facility::16","facility::2","facility::17"]
 }
 
-print(search_booking(filters))
+#print(search_booking(filters))
