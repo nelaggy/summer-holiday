@@ -20,10 +20,11 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 class Filters(BaseModel):
     location: str | None
     budget: float | None
-    num_people: int | None
-    start_date: str | None
-    end_date: str | None
-    dynamic_filters: dict[str, str] | None
+    adults_number: int | None
+    children_number: int | None
+    checkin_date: str | None
+    checkout_date: str | None
+    dynamic_filters: list[str] | None
 
 # Indices -> various filters in booking.com (redundant)
 indices_filters = {
