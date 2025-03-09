@@ -1,10 +1,11 @@
+import os
+import re
+from datetime import datetime
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 from openai import OpenAI
 from dotenv import load_dotenv
 from booking_com_api.booking_com_api import search_booking
-import os
-import re
 
 # Load environment varialbes from .env file
 load_dotenv()
@@ -707,18 +708,12 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
     prompt_message = f"""
     Preferences:
     {item}
-
     Hard Filters:
     {filters_values}
-
     Based on the preferences, please suggest the most suitable city. Respond strictly in the following format:
-
     "City Name: [City Name]"
-
     Also, match the hard filters to the user input and create a dictionary of relevant filters in the following format:
-
     "[Filter Name]: [True/False]"
-
     Ensure the response contains only the required information and no additional text.
     """
 
@@ -730,7 +725,6 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
     )
 
     response_content = response.choices[0].message.content
-    print(response_content)
     # Extract City Name
     match = re.search(r'City Name:\s*(.+)', response_content)
     location = match.group(1).strip() if match else ""
@@ -741,7 +735,6 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
         match = re.search(rf"{re.escape(filter)}:\s*(True|False)", response_content)
         if match:
             bool_dict[match.group(1).strip() == "True"].append(filter)
-    print(bool_dict)
     category_filter_string = []
     if filter in filters_values:
         for filter in bool_dict[True]:
@@ -749,21 +742,16 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
             unused_filters.remove(filter)
         for filter in bool_dict[False]:
             unused_filters.remove(filter)
-    print(category_filter_string)
     return location, category_filter_string
 
 def GPT_filter_suggestion(results, unused_filters):
     prompt_message = f"""
     Results:
     {results}
-
     Available Filters:
     {unused_filters}
-
     Based on the results and available filters above, suggest 5 filters that would best refine the search. Provide the filter names in the following format:
-
     "[Filter Name],"
-
     Do not include any extra text or explanation.
     """
     messages = [{"role": "user", "content": prompt_message}]
@@ -777,19 +765,25 @@ def GPT_filter_suggestion(results, unused_filters):
     print(response_content)
     return response_content.split(",")
 
+def nights_counter(checkin_date: str, checkout_date: str) -> int:
+    """Inputs are of form yyyy-mm-dd"""
+    date_format = "%Y-%m-%d"
+    checkin = datetime.strptime(checkin_date, date_format)
+    checkout = datetime.strptime(checkout_date, date_format)
+    delta = checkout - checkin
+    return delta.days
+
 @router.get("/search")
 async def search(item: Filters, full_results: bool = False) -> list[dict] | tuple[int, list[str]]:
     loc, category_filter_string = GPT_enquiry(item)
     bcomIn = {}
     bcomIn["destination"] = loc
     bcomIn["categories"] = category_filter_string
-    bcomIn["checkin_date"] = item["checkin_date"] # Double check the JSON contents of a query
+    bcomIn["checkin_date"] = item["checkin_date"]
     bcomIn["checkout_date"] = item["checkout_date"]
     bcomIn["adults_number"] = item["adults_number"]
     bcomIn["children_number"] = item["children_number"]
-    bcomIn["budget"] = item["budget"] * (item["adults_number"] + item["children_number"])
-    
-    print(bcomIn)
+    bcomIn["budget"] = item["budget"] * (item["adults_number"] + item["children_number"])/nights_counter(item["checkin_date"], item["checkout_date"])
     results = list(search_booking(bcomIn).values())
     num_results = len(results)
     suggested_filters = GPT_filter_suggestion(results, unused_filters)
