@@ -745,25 +745,27 @@ def GPT_enquiry(item: dict) -> tuple[str, list[str]]:
     return location, category_filter_string
 
 def GPT_filter_suggestion(results, unused_filters):
+    print(len(str(results)))
+    
     prompt_message = f"""
     Results:
     {results}
     Available Filters:
     {unused_filters}
     Based on the results and available filters above, suggest 5 filters that would best refine the search. Provide the filter names in the following format:
-    "[Filter Name],"
+    "[Filter Name] "
     Do not include any extra text or explanation.
     """
     messages = [{"role": "user", "content": prompt_message}]
     response = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o-mini",
         messages=messages,
         max_tokens=500
     )
 
     response_content = response.choices[0].message.content
     print(response_content)
-    return response_content.split(",")
+    return response_content.split(" ")
 
 def nights_counter(checkin_date: str, checkout_date: str) -> int:
     """Inputs are of form yyyy-mm-dd"""
