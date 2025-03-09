@@ -15,10 +15,10 @@ def build_category_filters(categories):
     return ",".join([f"class::{category}" for category in categories])
 
 # Example categories you want to filter by (e.g., 3-star, 4-star, and free cancellation)
-selected_categories = ["free_cancellation::1", "parking::1"]
+# selected_categories = ["free_cancellation::1", "parking::1"]
 
 # Build category filter string dynamically
-category_filter_string = build_category_filters(selected_categories)
+# category_filter_string = build_category_filters(selected_categories)
 
 
 # For GPT Ends Here!!!
@@ -73,30 +73,60 @@ def search_booking(filters: dict) -> dict:
     # Send request with query string
     conn.request("GET", f"/v1/hotels/search?{query_string}", headers=headers)
 
-    res = conn.getresponse()
-    data = res.read()
-
-    decoded_data = data.decode("utf-8")
-    parsed_json = json.loads(decoded_data)
-    result = dict()
+    search_res = conn.getresponse()
+    search_data = search_res.read()
+    parsed_json_search_data = json.loads(search_data.decode("utf-8"))
 
     # get dictionary of the first page of results with only necessary info
-    for i in range(len(parsed_json['result'])):
+    result = dict()
+    for i in range(len(parsed_json_search_data['result'])):
         result[i] = {
-            'hotel_name': parsed_json['result'][i]['hotel_name'],
-            'url': parsed_json['result'][i]['url'],
-            'gross_amount': parsed_json['result'][i]['composite_price_breakdown']['gross_amount'],
-            'accommodation_type_name': parsed_json['result'][i]['accommodation_type_name'],
-            'unit_configuration_label': parsed_json['result'][i]['unit_configuration_label'],
-            'address': parsed_json['result'][i]['address'],
-            'distances': parsed_json['result'][i]['distances'],
-            'is_city_center': parsed_json['result'][i]['is_city_center'],
-            'hotel_facilities': parsed_json['result'][i]['hotel_facilities'],
-            'soldout': parsed_json['result'][i]['soldout'],
-            'children_not_allowed': parsed_json['result'][i]['children_not_allowed']          
+            'hotel_name': parsed_json_search_data['result'][i]['hotel_name'],
+            'hotel_id': parsed_json_search_data['result'][i]['hotel_id'],
+            'url': parsed_json_search_data['result'][i]['url'],
+            'gross_amount': parsed_json_search_data['result'][i]['composite_price_breakdown']['gross_amount'],
+            'accommodation_type_name': parsed_json_search_data['result'][i]['accommodation_type_name'],
+            'unit_configuration_label': parsed_json_search_data['result'][i]['unit_configuration_label'],
+            'address': parsed_json_search_data['result'][i]['address'],
+            'distances': parsed_json_search_data['result'][i]['distances'],
+            'is_city_center': parsed_json_search_data['result'][i]['is_city_center'],
+            'hotel_facilities': parsed_json_search_data['result'][i]['hotel_facilities'],
+            'soldout': parsed_json_search_data['result'][i]['soldout'],
+            'children_not_allowed': parsed_json_search_data['result'][i]['children_not_allowed']          
         }
 
-    # add reviews to result dictionary
+        # add reviews to dictionary
+        review_query_params = {
+            'page_number': 0,
+            'language_filter': 'en-gb',
+            'hotel_id': parsed_json_search_data['result'][i]['hotel_id'],
+            'locale': 'en-gb',
+            'sort_type': 'SORT_MOST_RELEVANT'
+        }
+        # Encode parameters for the request
+        review_query_string = urlencode(review_query_params)
+        # Send request with query string
+        conn.request("GET", f"/v1/hotels/reviews?{review_query_string}", headers=headers)
+        review_res = conn.getresponse()
+        review_data = review_res.read()
+        parsed_json_review_data = json.loads(review_data.decode("utf-8"))
+
+        pros = []
+        cons = []
+        if 'result' in parsed_json_review_data:
+            for j in range(len(parsed_json_review_data['result'])):
+                pros_str = parsed_json_review_data['result'][j]['pros']
+                cons_str = parsed_json_review_data['result'][j]['cons']
+                if pros_str:
+                    pros.append(pros_str)
+                if cons_str:
+                    cons.append(cons_str)
+        else:
+            print("Warning: 'result' key missing or not a list")
+
+        result[i]['review'] = {}
+        result[i]['review']['pros'] = pros
+        result[i]['review']['cons'] = cons
 
     
     return result
@@ -104,11 +134,11 @@ def search_booking(filters: dict) -> dict:
 # example input and result
 filters = {
     'adults_number': 5,
-    'destination': "Paris",
-    'children_number': 6,
+    'destination': "Italy",
+    'children_number': 1,
     'checkin_date': '2025-06-16',
     'checkout_date': '2025-06-19',
     'categories': ["facility::16","facility::2","facility::17"]
 }
 
-search_booking(filters)
+print(search_booking(filters))
